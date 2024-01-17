@@ -1,0 +1,42 @@
+server:
+  port: ${PORT:8085}
+spring:
+  jackson:
+    time-zone: UTC
+  datasource:
+    initialization-mode: always
+    platform: postgres
+    url: jdbc:postgresql://127.0.0.1:5432/payments_service
+    username: postgres
+    password: password
+  jpa:
+    show_sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          lob:
+            non_contextual_creation: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: none
+      generate-ddl: true
+journal:
+  name: payments-service.journal
+auth:
+  username: ${PAYMENTS_SERVICE_USERNAME:payments_service}
+  password: ${PAYMENTS_SERVICE_PASSWORD:$2y$12$Sr9Zsb.eVzosnkwtOMDfjOVM6YqgPSk/6mpOrbaFXBDExiSVxZlmm} # password
+  roles: ADMIN
+bees:
+  key: BEES_KEY
+  secret: BEES_SECRET
+  account-ref: BEES_ACCOUNT_REF
+  api-gateway-callback-base-url: ${API_GATEWAY_CALLBACK_BASE_URL:http://c0fe6c5624a1.ngrok.io}
+  api-gateway-callback-url: ${API_GATEWAY_CALLBACK_URL:/v1/callback}
+  callback-url: ${BEES_CALLBACK_URL:/v1/callback}
+  env: ${BEES_ENV:prod}
+endpoints:
+  users:
+    host: ${USERS_SERVICE_HOST:http://localhost:8082}/v1/user
+    username: ${USERS_SERVICE_USERNAME:user_service}
+    password: ${USERS_SERVICE_PASSWORD:password}

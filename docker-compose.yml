@@ -1,0 +1,62 @@
+version: '3.3'
+services:
+  payments-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: payments-service
+    container_name: payments-service-local
+    restart: unless-stopped
+    tty: true
+    ports:
+      - 8085
+    environment:
+      - PORT=8085
+      - PAYMENTS_SERVICE_DB_HOST=payments-service-db
+      - PAYMENTS_SERVICE_DB=payments_service
+      - PAYMENTS_SERVICE_DB_USERNAME=payments_service
+      - PAYMENTS_SERVICE_DB_PASSWORD=password
+      - PAYMENTS_SERVICE_USERNAME=payments_service
+      - PAYMENTS_SERVICE_PASSWORD=$$2y$$12$$Sr9Zsb.eVzosnkwtOMDfjOVM6YqgPSk/6mpOrbaFXBDExiSVxZlmm
+      - BEES_KEY=5ce0189ba8ce979e354c280560988c49
+      - BEES_SECRET=4185ec490c5dd1da62688554c291641f
+      - BEES_ACCOUNT_REF=c26b643a61ba81b2498e5c887e83da63
+      - API_GATEWAY_CALLBACK_BASE_URL=http://c0fe6c5624a1.ngrok.io
+      - API_GATEWAY_CALLBACK_URL=/v1/callback
+      - BEES_CALLBACK_URL=/v1/callback
+      - BEES_ENV=prod
+      - USERS_SERVICE_HOST=user-service
+      - USERS_SERVICE_USERNAME=user_service
+      - USERS_SERVICE_PASSWORD=password
+    networks:
+      - app-web-network
+      - payments-service-network
+    depends_on:
+      - payments-service-db
+
+  payments-service-db:
+    image: postgres:11.14-alpine
+    container_name: payments-service-db-local
+    restart: unless-stopped
+    tty: true
+    ports:
+      - 5432
+    volumes:
+      - ./sql/create_tables.sql:/docker-entrypoint-initdb.d/create_tables.sql
+    #      - payments-service-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=payments_service
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=payments_service
+    networks:
+      - payments-service-network
+
+#volumes:
+#  payments-service-data:
+#     driver: local
+
+networks:
+  payments-service-network:
+    driver: bridge
+  app-web-network:
+    driver: bridge

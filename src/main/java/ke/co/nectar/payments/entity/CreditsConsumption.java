@@ -49,6 +49,11 @@ public class CreditsConsumption extends DateAudit {
         setTokenRef(tokenRef);
     }
 
+    @Override
+    public String toString() {
+        return String.format("ref: %s", ref);
+    }
+
     public Long getId() {
         return id;
     }

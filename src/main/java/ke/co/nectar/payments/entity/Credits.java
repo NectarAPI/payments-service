@@ -58,6 +58,11 @@ public class Credits extends DateAudit {
         setPayment(payment);
     }
 
+    @Override
+    public String toString() {
+        return String.format("ref: %s", ref);
+    }
+
     public Long getId() {
         return id;
     }

@@ -28,6 +28,11 @@ public class UnitCurrencyValue extends DateAudit {
         setValue(value);
     }
 
+    @Override
+    public String toString() {
+        return String.format("id: %d", id);
+    }
+
     public Long getId() {
         return id;
     }

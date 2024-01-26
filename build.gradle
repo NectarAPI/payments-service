@@ -14,7 +14,7 @@ bootRun {
 }
 
 group = 'ke.co.nectar.config'
-version '1.11.0-alpha'
+version '3.0.0-alpha'
 
 java {
 	sourceCompatibility = '17'

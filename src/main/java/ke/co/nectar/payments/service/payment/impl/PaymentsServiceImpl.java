@@ -8,6 +8,8 @@ import ke.co.nectar.payments.service.payment.PaymentsService;
 import ke.co.nectar.payments.service.payment.impl.exceptions.InvalidPaymentRefException;
 import ke.co.nectar.payments.service.payment.impl.exceptions.UnsupportedPaymentRequestTypeException;
 import ke.co.nectar.payments.service.payment.manager.MpesaPaymentManager;
+import ke.co.nectar.payments.service.payment.manager.PaymentManager;
+import org.apache.commons.text.CaseUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -53,26 +55,65 @@ public class PaymentsServiceImpl implements PaymentsService {
                                   String userRef,
                                   PaymentRequest paymentRequest)
             throws Exception {
-       if (paymentRequest.getType().equals("MPESA")) {
-           String transactionRef = manager.schedule(paymentRequest.getAmount(),
-                                                        paymentRequest.getData());
+        String paymentRequestType = paymentRequest.getType();
+        PaymentManager manager = (PaymentManager) Class.forName(
+                        String.format("ke.co.nectar.payments.managers.%s.%sPaymentManager",
+                                paymentRequestType.toLowerCase(),
+                                CaseUtils.toCamelCase(paymentRequestType, true, ' ')))
+                .getDeclaredConstructor().newInstance();
+        String transactionRef = manager.schedule(paymentRequest.getAmount(),
+                paymentRequest.getData());
 
-           Payment payment = new Payment();
-           payment.setRef(transactionRef);
-           payment.setScheduled(Instant.now());
-           payment.setType(paymentRequest.getType());
-           payment.setValue(paymentRequest.getAmount());
-           payment.setUserRef(userRef);
-           paymentsRepository.save(payment);
+        Payment payment = new Payment();
+        payment.setRef(transactionRef);
+        payment.setScheduled(Instant.now());
+        payment.setType(paymentRequest.getType());
+        payment.setValue(paymentRequest.getAmount());
+        payment.setUserRef(userRef);
+        paymentsRepository.save(payment);
 
-           return transactionRef;
-       }
-       throw new UnsupportedPaymentRequestTypeException(String.format("Invalid payment request type %s",
-                                                                        paymentRequest.getType()));
+        return transactionRef;
+    }
+
+    @Override
+    public Payment processSchedulePaymentcallback(String requestId,
+                                                    String paymentResponse)
+            throws Exception {
+        Payment payment = getPaymentManager(paymentResponse)
+                .processCallback(paymentResponse);
+        return paymentsRepository.save(payment);
+    }
+
+
+    @Override
+    public String processPaymentTimeout(String requestId, String paymentResult)
+            throws Exception {
+        Payment payment = getPaymentManager(paymentResult);
+        return savePayment(payment).getRef();
+    }
+
+    @Override
+    public String validatePayment(String requestId, String paymentRef) throws Exception {
+        Payment payment = paymentsRepository.findByRef(paymentRef);
+        if (payment != null)  {
+            PaymentManager manager = getPaymentManager(payment.getType());
+            manager.validatePayment(payment);
+            return payment.getRef();
+        }
+        throw new InvalidPaymentRefException(paymentRef);
     }
 
     @Override
     public Payment savePayment(Payment payment) {
         return paymentsRepository.save(payment);
     }
+
+    @Override
+    public Payment processPaymentValidateResult(String requestId, String paymentResult) throws Exception {
+        Payment payment = getPaymentManager(paymentResult)
+                .processPaymentValidateResult(paymentResult);
+        return savePayment(payment);
+    }
+
+
 }

@@ -22,36 +22,6 @@ public class PaymentsController {
     @Autowired
     private PaymentsService paymentsService;
 
-    @GetMapping("/payments")
-    public ApiResponse getPayment(@RequestParam(value = "request_id") @NotNull String requestId,
-                                  @RequestParam @NotNull String ref) {
-        ApiResponse apiResponse;
-        try {
-            if (ref != null && !ref.isBlank()) {
-
-                Payment payment = paymentsService.findByRef(ref);
-
-                Map<String, Object> output = new LinkedHashMap<>();
-                output.put("payment", payment);
-
-                apiResponse = new ApiResponse(StringConstants.SUCCESS_CODE,
-                        StringConstants.SUCCESS_MSG_OBTAINED_PAYMENT,
-                        requestId,
-                        output);
-            } else {
-                apiResponse = new ApiResponse(StringConstants.SUCCESS_CODE,
-                        StringConstants.EMPTY_REF_VALUE,
-                        requestId);
-            }
-
-        } catch (Exception e) {
-            apiResponse = new ApiResponse(StringConstants.INTERNAL_SERVER_ERROR,
-                    e.getMessage(),
-                    requestId);
-        }
-        return apiResponse;
-    }
-
     @GetMapping(value = "/payments", params = { "user_ref", "detailed_param" })
     public ApiResponse getPaymentsDetails(@RequestParam(value = "request_id") @NotNull String requestId,
                                           @RequestParam(value = "user_ref") @NotNull String userRef,
@@ -75,6 +45,36 @@ public class PaymentsController {
                                         StringConstants.SUCCESS_MSG_OBTAINED_PAYMENT_TOTAL,
                                         requestId,
                                         output);
+
+        } catch (Exception e) {
+            apiResponse = new ApiResponse(StringConstants.INTERNAL_SERVER_ERROR,
+                    e.getMessage(),
+                    requestId);
+        }
+        return apiResponse;
+    }
+
+    @GetMapping("/payments")
+    public ApiResponse getPayment(@RequestParam(value = "request_id") @NotNull String requestId,
+                                  @RequestParam @NotNull String ref) {
+        ApiResponse apiResponse;
+        try {
+            if (ref != null && !ref.isBlank()) {
+
+                Payment payment = paymentsService.findByRef(ref);
+
+                Map<String, Object> output = new LinkedHashMap<>();
+                output.put("payment", payment);
+
+                apiResponse = new ApiResponse(StringConstants.SUCCESS_CODE,
+                        StringConstants.SUCCESS_MSG_OBTAINED_PAYMENT,
+                        requestId,
+                        output);
+            } else {
+                apiResponse = new ApiResponse(StringConstants.SUCCESS_CODE,
+                        StringConstants.EMPTY_REF_VALUE,
+                        requestId);
+            }
 
         } catch (Exception e) {
             apiResponse = new ApiResponse(StringConstants.INTERNAL_SERVER_ERROR,
@@ -114,7 +114,7 @@ public class PaymentsController {
         return apiResponse;
     }
 
-    @PostMapping(value = "/payments", consumes = "application/json" )
+    @PostMapping(value = "/payments/schedule", consumes = "application/json")
     @Notify(category = "SCHEDULE_PAYMENT",
             description = "Scheduled payment request [Request-ID: {requestId}]")
     public ApiResponse schedulePayment(@RequestParam(value = "request_id") @NotNull String requestId,
@@ -147,4 +147,109 @@ public class PaymentsController {
         return apiResponse;
     }
 
+    @PostMapping(value = "/payments/callback", consumes = "application/json")
+    @Notify(category = "SCHEDULE_PAYMENT_RESULT",
+            description = "Scheduled payment request result [Request-ID: {requestId}]")
+    public ApiResponse processSchedulePaymentCallback(@RequestParam(value = "request_id") @NotNull String requestId,
+                                                       @RequestBody String paymentResult) {
+        ApiResponse apiResponse;
+        try {
+            Payment scheduledPayment = paymentsService.processSchedulePaymentcallback(requestId, paymentResult);
+            Map<String, Object> output = new LinkedHashMap<>();
+            output.put("payment", scheduledPayment);
+            apiResponse = new ApiResponse(StringConstants.SUCCESS_CODE,
+                                            StringConstants.PAYMENT_SCHEDULED_MSG,
+                                            requestId,
+                                            output);
+
+        } catch (Exception e) {
+            apiResponse = new ApiResponse(StringConstants.INTERNAL_SERVER_ERROR,
+                    e.getMessage(),
+                    requestId);
+        }
+        return apiResponse;
+    }
+
+    @PostMapping(value = "/payments/timeout", consumes = "application/json")
+    @Notify(category = "PAYMENT_TIMEOUT",
+            description = "Payment timeout request [Request-ID: {requestId}]")
+    public ApiResponse processPaymentTimeout(@RequestParam(value = "request_id") @NotNull String requestId,
+                                             @RequestBody String paymentResult) {
+        ApiResponse apiResponse;
+        try {
+            String paymentTimeoutRef = paymentsService.processPaymentTimeout(requestId, paymentResult);
+            if (!paymentTimeoutRef.isBlank()) {
+                Map<String, Object> output = new LinkedHashMap<>();
+                output.put("payment_ref", paymentTimeoutRef);
+
+                apiResponse = new ApiResponse(StringConstants.SUCCESS_CODE,
+                                                StringConstants.PAYMENT_SCHEDULED_MSG,
+                                                requestId,
+                                                output);
+            } else {
+                apiResponse = new ApiResponse(StringConstants.INVALID_REQUEST,
+                        StringConstants.ERROR_SCHEDULING_PAYMENT_MSG,
+                        requestId);
+            }
+
+        } catch (Exception e) {
+            apiResponse = new ApiResponse(StringConstants.INTERNAL_SERVER_ERROR,
+                    e.getMessage(),
+                    requestId);
+        }
+        return apiResponse;
+    }
+
+    @PostMapping(value = "/payments/validate", consumes = "application/json")
+    @Notify(category = "PAYMENT_VALIDATE",
+            description = "Payment validate request [Request-ID: {requestId}]")
+    public ApiResponse validatePayment(@RequestParam(value = "request_id") @NotNull String requestId,
+                                       @NotNull @RequestParam(value = "payment_ref") String paymentRef) {
+        ApiResponse apiResponse;
+        try {
+            String paymentTimeoutRef = paymentsService.validatePayment(requestId, paymentRef);
+            if (!paymentTimeoutRef.isBlank()) {
+                Map<String, Object> output = new LinkedHashMap<>();
+                output.put("payment_ref", paymentTimeoutRef);
+
+                apiResponse = new ApiResponse(StringConstants.SUCCESS_CODE,
+                        StringConstants.PAYMENT_SCHEDULED_MSG,
+                        requestId,
+                        output);
+            } else {
+                apiResponse = new ApiResponse(StringConstants.INVALID_REQUEST,
+                        StringConstants.ERROR_SCHEDULING_PAYMENT_MSG,
+                        requestId);
+            }
+
+        } catch (Exception e) {
+            apiResponse = new ApiResponse(StringConstants.INTERNAL_SERVER_ERROR,
+                    e.getMessage(),
+                    requestId);
+        }
+        return apiResponse;
+    }
+
+    @PostMapping(value = "/payments/status", consumes = "application/json")
+    @Notify(category = "PAYMENT_VALIDATE_RESULT",
+            description = "Payment validate result request [Request-ID: {requestId}]")
+    public ApiResponse processValidatePaymentStatus(@RequestParam(value = "request_id") @NotNull String requestId,
+                                                    @RequestBody String paymentResult) {
+        ApiResponse apiResponse;
+        try {
+            Payment scheduledPayment = paymentsService.processPaymentValidateResult(requestId, paymentResult);
+            Map<String, Object> output = new LinkedHashMap<>();
+            output.put("payment", scheduledPayment);
+            apiResponse = new ApiResponse(StringConstants.SUCCESS_CODE,
+                    StringConstants.PAYMENT_SCHEDULED_MSG,
+                    requestId,
+                    output);
+
+        } catch (Exception e) {
+            apiResponse = new ApiResponse(StringConstants.INTERNAL_SERVER_ERROR,
+                    e.getMessage(),
+                    requestId);
+        }
+        return apiResponse;
+    }
 }

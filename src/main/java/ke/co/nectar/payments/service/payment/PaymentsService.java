@@ -14,7 +14,15 @@ public interface PaymentsService {
                            String userRef,
                            PaymentRequest paymentRequest) throws Exception;
 
+    Payment processSchedulePaymentcallback(String requestId, String paymentResponse) throws Exception;
+
+    String processPaymentTimeout(String requestId, String paymentResult) throws Exception;
+
+    String validatePayment(String requestId, String paymentRef) throws Exception;
+
     Payment savePayment(Payment payment);
+
+    Payment processPaymentValidateResult(String requestId, String paymentResult) throws Exception;
 
     Double getPaymentsTotalByUserRef(String userRef) throws Exception;
 

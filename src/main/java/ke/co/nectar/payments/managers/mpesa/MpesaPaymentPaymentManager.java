@@ -2,14 +2,14 @@ package ke.co.nectar.payments.managers.mpesa;
 
 import ke.co.nectar.payments.controllers.payment.PaymentRequest;
 import ke.co.nectar.payments.controllers.payment.PaymentResponse;
-import ke.co.nectar.payments.managers.Manager;
+import ke.co.nectar.payments.managers.PaymentManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 
 @Component
-public class MpesaPaymentManager implements Manager {
+public class MpesaPaymentPaymentManager implements PaymentManager {
 
     @Autowired
     private MpesaPayment mpesaPayment;
@@ -17,8 +17,7 @@ public class MpesaPaymentManager implements Manager {
     @Override
     public String schedulePayment(String requestId,
                                    String userRef,
-                                   PaymentRequest paymentRequest)
-            throws Exception {
+                                   PaymentRequest paymentRequest) throws Exception {
         Instant currentTimestamp = Instant.now();
         Double amount = paymentRequest.getAmount();
         String phoneNo = (String) paymentRequest.getData().get().get("phone_no");
